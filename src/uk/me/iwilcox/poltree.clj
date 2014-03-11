@@ -150,11 +150,3 @@
     (if (= sibling-side :left)
         (hcombine sibling-data ndata)
         (hcombine ndata sibling-data)))
-
-; A noddy test.
-(require '[uk.me.iwilcox.poltree :as poltree])
-(def accounts (map #(hash-map :uid % :balance % :nonce %) (range 6)))
-(def tree (poltree/accounts->tree accounts))
-(def index (poltree/index-leaves tree))
-(def vpath3 (poltree/verification-path tree (get index 3)))
-(poltree/included? 3 3 vpath3 "Nmu5CwNXrw2xiH2cKj4zyHbRWmoPAU3vZTt2RLVLS2g=")
