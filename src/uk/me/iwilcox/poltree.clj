@@ -21,7 +21,9 @@
 ; Build a binary Merkle tree of liabilities from a collection of account maps,
 ; each with (at least) the keys:  :uid  :nonce  :balance.
 (defn accounts->tree [accounts]
-    (first (pp-accounts->tree (map prep-account accounts))))
+    ; For each account, adapt keys then nest in a list to make it a tree leaf
+    ; node.
+    (first (pp-accounts->tree (map #(list (prep-account %)) accounts))))
 
 ; Given a liability tree root, walk the tree and produce an index from account
 ; UID to directions-to-that-leaf.  The directions consist of a sequential
@@ -83,12 +85,10 @@
 ; balance of that account was included in the root's total, and whether all
 ; balances seen on the path-to-root were non-negative.
 (defn included? [uid balance [nonce & vpath] published-root-hash]
-    (let [account {:sum balance :uid uid :nonce nonce}
-          h (leaf-hash account)
-          account-with-hash (assoc account :hash h)]
+    (let [account (prep-account {:uid uid :balance balance :nonce nonce})]
         (and (not-any? #(neg? (:sum (second %))) vpath)
              (= published-root-hash
-                (:hash (reduce combiner-reducer account-with-hash vpath))))))
+                (:hash (reduce combiner-reducer account vpath))))))
 
 ;;;;;;;;;;;
 ; Helpers
@@ -124,12 +124,12 @@
   ([l r] (list (hcombine (node-data l) (node-data r)) l r)))
 
 (defn- leaf-hash [account]
-    (sha256-base64 (str (:uid account) "|" (:nonce account))))
+    (sha256-base64 (str (:uid account) "|" (:balance account) "|" (:nonce account))))
 
-; Add :hash to account map and wrap in a list to make it a tree leaf node.
+; Add :hash to account map, and rename :balance to :sum.
 (defn- prep-account [account]
-    (list (-> account (assoc ,,, :hash (leaf-hash account))
-                      (set/rename-keys ,,, {:balance :sum}))))
+    (-> account (assoc ,,, :hash (leaf-hash account))
+                (set/rename-keys ,,, {:balance :sum})))
 
 ; Build a binary Merkle tree of liabilities from a collection of preprocessed
 ; account maps, each with (at least) the keys :hash and :sum.
