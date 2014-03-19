@@ -6,8 +6,8 @@
 ; Distributed under the Boost Software License, Version 1.0.  See accompanying
 ; file LICENCE.txt or copy at <http://www.boost.org/LICENSE_1_0.txt>.
 
-(ns uk.me.iwilcox.poltree
-    (:require [clojure.set :as set]))
+(ns uk.me.iwilcox.poltree.core
+    (:require '[clojure.set :as set]))
 
 (declare node-data left-child right-child leaf?)
 (declare sha256-base64 hcombine ncombine leaf-hash)
@@ -23,7 +23,9 @@
 (defn accounts->tree [accounts]
     ; For each account, adapt keys then nest in a list to make it a tree leaf
     ; node.
-    (first (pp-accounts->tree (map #(list (prep-account %)) accounts))))
+    (-> (map #(list (prep-account %)) accounts)
+        (pp-accounts->tree ,,,)
+        (first ,,,)))
 
 ; Given a liability tree root, walk the tree and produce an index from account
 ; UID to directions-to-that-leaf.  The directions consist of a sequential
@@ -73,9 +75,9 @@
               follow-child ((if goleft left-child right-child) n)
               other-child-side (if goleft :right :left)
               other-child ((if goleft right-child left-child) n)
-              other-child-data (select-keys (node-data other-child) [:sum :hash])
-              vpath (cons [other-child-side other-child-data] vpath)]
-            (recur follow-child (rest root-path) vpath)))))
+              other-child-data (select-keys (node-data other-child) [:sum :hash])]
+            (->> (cons [other-child-side other-child-data] vpath)
+                 (recur follow-child (rest root-path) ,,,)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; Customer interface.
@@ -85,6 +87,8 @@
 ; balance of that account was included in the root's total, and whether all
 ; balances seen on the path-to-root were non-negative.
 (defn included? [uid balance [nonce & vpath] published-root-hash]
+    ; Just barely resisting the urge to use keywordize:
+    ;   https://github.com/amalloy/amalloy-utils/blob/master/src/amalloy/utils.clj#L30
     (let [account (prep-account {:uid uid :balance balance :nonce nonce})]
         (and (not-any? #(neg? (:sum (second %))) vpath)
              (= published-root-hash
@@ -110,7 +114,7 @@
             (.update d (.getBytes s))
             (javax.xml.bind.DatatypeConverter/printBase64Binary (.digest d)))))
 
-; Combining of plain hashes.
+; Combining of plain maps.
 (defn- hcombine
   ([n] n)
   ([l r]
@@ -118,7 +122,7 @@
         {:sum  sum
          :hash (sha256-base64 (str sum (l :hash) (r :hash))) })))
 
-; Combining of tree nodes with hashes as data.
+; Combining of tree nodes which have maps as data.
 (defn- ncombine
   ([n] n)
   ([l r] (list (hcombine (node-data l) (node-data r)) l r)))
