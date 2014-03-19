@@ -6,7 +6,7 @@
 
 (ns uk.me.iwilcox.poltree_test
     (:require [clojure.test :refer [deftest is use-fixtures run-tests]])
-    (:require [uk.me.iwilcox.poltree :as poltree]))
+    (:require [uk.me.iwilcox.poltree.core :as poltree]))
 
 ; If there's some recommended/typical/accepted way to provide bindings for
 ; fixtures, I can't find it documented anywhere.  This works, but I'd like

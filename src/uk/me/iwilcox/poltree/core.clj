@@ -7,7 +7,7 @@
 ; file LICENCE.txt or copy at <http://www.boost.org/LICENSE_1_0.txt>.
 
 (ns uk.me.iwilcox.poltree.core
-    (:require '[clojure.set :as set]))
+    (:require [clojure.set :as set]))
 
 (declare node-data left-child right-child leaf?)
 (declare sha256-base64 hcombine ncombine leaf-hash)
@@ -77,7 +77,7 @@
               other-child ((if goleft right-child left-child) n)
               other-child-data (select-keys (node-data other-child) [:sum :hash])]
             (->> (cons [other-child-side other-child-data] vpath)
-                 (recur follow-child (rest root-path) ,,,)))))
+                 (recur follow-child (rest root-path) ,,,))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; Customer interface.
