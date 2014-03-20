@@ -108,6 +108,13 @@
 ; Or:       [n] (every? nil? (rest n))
 ; Or:       [n] (:uid n)
 
+(defn as-map [n]
+    (if (seq? n)
+        (into {} (filter val { :data (first n)
+                               :left (second n)
+                               :right (nth n 2 nil) }))
+        n)) ; Acting like 'identity' on non-maps allows use with postwalk.
+
 (defn- sha256-base64 [s]
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
         (do
@@ -120,7 +127,7 @@
   ([l r]
     (let [sum (+ (:sum l) (:sum r))]
         {:sum  sum
-         :hash (sha256-base64 (str sum (l :hash) (r :hash))) })))
+         :hash (sha256-base64 (str sum "|" (l :hash) "|" (r :hash))) })))
 
 ; Combining of tree nodes which have maps as data.
 (defn- ncombine
