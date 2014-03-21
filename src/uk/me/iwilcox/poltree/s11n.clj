@@ -14,21 +14,34 @@
     (:require [clojure.set :as set])
     (:require [clojure.string :as str])
     (:require [clojure.walk :as walk])
-    (:require [uk.me.iwilcox.poltree.core :as core]))
+    (:require [uk.me.iwilcox.poltree.core :as core])
+    (:import  (java.lang NumberFormatException)))
 
-(def nonce-bits 128)
+(def sum-regex
+  "When parsing `sum` key/value pairs in accounts lists, this is used
+  to check that numbers follow the spec."
+  #"(?x:
+        (?:   0
+            | [1-9] [0-9]* )
+        # Fractional part, maybe
+        (?: \. [0-9]+ )?
+    )")
 
-(declare add-missing-nonce vpath->json-helper)
+(declare vpath->json-helper adapt-json-account-map)
 
-; Verification-path is as returned by verification-path.
-(defn vpath->json [ [ nonce & path ] ]
+(defn vpath->json
+  "Given a path as returned by core/verification-path, return a JSON
+  representation of the partial tree conforming to the spec."
+  [ [ nonce & path ] ]
     (let [user-node { "data" { "nonce" nonce } } ]
         (-> (reduce vpath->json-helper user-node path)
             (json/write-str ,,,))))
 
+; This does NOT complain if you feed it balances with excessive
+; numbers of decimal places for the currency.
 (defn accounts-json->maps [accounts-json]
     (->> (json/read-str accounts-json :key-fn keyword)
-         (map add-missing-nonce ,,,)))
+         (map adapt-json-account-map ,,,)))
 
 (defn tree->json [tree]
     (json/write-str (walk/postwalk core/as-map tree)))
@@ -38,17 +51,18 @@
 ;;;;;;;;;;;
 ; Helpers
 ;;;;;;;;;;;
-
-(defn- make-nonce-hexstr [num-bytes]
-    (let [sr (java.security.SecureRandom.)
-          bytes (byte-array num-bytes)]
-        (.nextBytes sr bytes)
-        (str/join (map #(format "%02x" %) bytes))))
-
-(defn- add-missing-nonce [account-map]
-    (if-not (contains? account-map :nonce)
-        (assoc account-map :nonce (make-nonce-hexstr (/ nonce-bits 8)))
-        account-map))
+(defn- adapt-json-account-map
+  "Given an account map freshly parsed from JSON, parse the given
+  account's :balance string, returning the updated map."
+  ; FIXME: could do more validation but at the moment it's a test
+  ; format only and the stricter checks in core will catch it.
+  [account]
+    (if-not (re-matches sum-regex (:balance account))
+        (throw (NumberFormatException.
+                (format "\"balance\" value %s for user %s isn't supported by spec"
+                       (:balance account) (:user account)))))
+    (-> (update-in account [:balance] bigdec)
+        (set/rename-keys ,,, {:user :uid})))
 
 (defn- vpath->json-helper [node [side sibling]]
     (let [sibling (set/rename-keys sibling {:sum "value" :hash "hash"})]

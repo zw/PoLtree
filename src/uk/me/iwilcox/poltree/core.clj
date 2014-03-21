@@ -9,10 +9,11 @@
 ; Core interface/data types.
 ;
 (ns uk.me.iwilcox.poltree.core
+    (:require [clojure.string :as str])
     (:require [clojure.set :as set]))
 
 (declare node-data left-child right-child leaf?)
-(declare sha256-base64 hcombine ncombine leaf-hash)
+(declare sha256-hex hcombine ncombine leaf-hash)
 (declare prep-account pp-accounts->tree)
 (declare combiner-reducer)
 
@@ -20,8 +21,15 @@
 ; Coinholder interface
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Build a binary Merkle tree of liabilities from a collection of account maps,
-; each with (at least) the keys:  :uid  :nonce  :balance.
+; Automatically added nonces contain this many random bits.
+(def nonce-bits 128)
+
+; Build a binary Merkle tree of liabilities from a collection of
+; account maps, each with (at least) the keys: :uid :nonce :balance.
+; FIXME: check here or in pp-accounts->tree that there are no dupe
+; uids in the list.
+; This does NOT complain if you feed it balances with excessive
+; numbers of decimal places for the currency.
 (defn accounts->tree [accounts]
     ; For each account, adapt keys then nest in a list to make it a tree leaf
     ; node.
@@ -68,6 +76,7 @@
 ;
 ; Returned sibling node hashes contain only the keys  :sum  :hash.
 ;
+; TODO: currently fails pretty silently if passed root=nil.
 (defn verification-path
   ([root root-path] (verification-path root root-path ()))
   ([n root-path vpath]
@@ -99,6 +108,13 @@
 ;;;;;;;;;;;
 ; Helpers
 ;;;;;;;;;;;
+(declare add-nonce-if-missing make-nonce-hexstr validate-account-map)
+
+(defn- format-min-dp
+  "Format `sum` (a bigdec) with the minimum possible number of
+  trailing zeros."
+  [sum]
+    (.toPlainString (.stripTrailingZeros sum)))
 
 ; Convenience bits for manipulating tree nodes of the form:
 ;     ( { <data> }  <left child>  <right child> )
@@ -112,16 +128,18 @@
 
 (defn as-map [n]
     (if (seq? n)
-        (into {} (filter val { :data (first n)
+        ; Stringify :sum and filter out key->nil mappings.
+        (into {} (filter val { :data (update-in (first n) [:sum]
+                                                format-min-dp)
                                :left (second n)
                                :right (nth n 2 nil) }))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
 
-(defn- sha256-base64 [s]
+(defn- sha256-hex [s]
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
         (do
             (.update d (.getBytes s))
-            (javax.xml.bind.DatatypeConverter/printBase64Binary (.digest d)))))
+            (str/join (map #(format "%02x" %) (.digest d))))))
 
 ; Combining of plain maps.
 (defn- hcombine
@@ -129,20 +147,54 @@
   ([l r]
     (let [sum (+ (:sum l) (:sum r))]
         {:sum  sum
-         :hash (sha256-base64 (str sum "|" (l :hash) "|" (r :hash))) })))
+         :hash (->> [ (format-min-dp sum) (l :hash) (r :hash) ]
+                    (str/join "|" ,,,)
+                    (sha256-hex ,,,))})))
 
 ; Combining of tree nodes which have maps as data.
 (defn- ncombine
   ([n] n)
   ([l r] (list (hcombine (node-data l) (node-data r)) l r)))
 
-(defn- leaf-hash [account]
-    (sha256-base64 (str (:uid account) "|" (:balance account) "|" (:nonce account))))
+(defn- leaf-hash [{uid :uid, balance :balance, nonce :nonce}]
+    (sha256-hex (str uid "|" (format-min-dp balance) "|" nonce)))
 
-; Add :hash to account map, and rename :balance to :sum.
-(defn- prep-account [account]
-    (-> account (assoc ,,, :hash (leaf-hash account))
-                (set/rename-keys ,,, {:balance :sum})))
+(defn- prep-account
+  "Validate, then remove irrelevant keys, add :nonce, add :hash,
+  rename :balance to :sum."
+  [account]
+    (validate-account-map account)
+    (-> (select-keys account [:uid :balance :nonce])
+        (add-nonce-if-missing ,,,)
+        (assoc ,,, :hash (leaf-hash account))
+        (set/rename-keys ,,, {:balance :sum})))
+
+(defn- validate-account-map
+  "Ensure account contains the right k/v pairs of the right types."
+  [{ balance :balance, uid :uid, :as account }]
+    (if (or (nil? uid) (not (string? uid))
+            (nil? balance) (not (instance? BigDecimal balance)))
+        (throw (IllegalArgumentException.
+                "Each account in list must have uid->string and balance->bigdec")))
+    ; FIXME: Should specifically check it's hex, or if we're relaxed, at least
+    ; exclude "|" (well, include everything but "|").
+    (if (and (contains? account :nonce) (not (string? (:nonce account))))
+        (throw (IllegalArgumentException.
+                 (format "account %s: nonce must be a string if present"
+                         uid)))))
+
+(defn- add-nonce-if-missing
+  "Update given account map adding a random nonce."
+  [account]
+    (if-not (contains? account :nonce)
+        (assoc account :nonce (make-nonce-hexstr (/ nonce-bits 8)))
+        account))
+
+(defn- make-nonce-hexstr [num-bytes]
+    (let [sr (java.security.SecureRandom.)
+          bytes (byte-array num-bytes)]
+        (.nextBytes sr bytes)
+        (str/join (map #(format "%02x" %) bytes))))
 
 ; Build a binary Merkle tree of liabilities from a collection of preprocessed
 ; account maps, each with (at least) the keys :hash and :sum.

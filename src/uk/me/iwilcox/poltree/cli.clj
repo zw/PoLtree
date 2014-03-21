@@ -22,6 +22,8 @@ Usage:
 ;  Extract a customer's partial tree from a complete tree produced earlier by
 ;  completetree:
 ;    poltree.sh partialtree 'foo@example.com' completetree.json
+; This does NOT complain if you feed it balances with excessive
+; numbers of decimal places for the currency.
 
 (declare slurp-accounts)
 
