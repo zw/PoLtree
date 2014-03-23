@@ -5,8 +5,9 @@ An implementation of [Greg Maxwell's Merkle approach][merkle] to [proving
 Bitcoin liabilities][proving], in Clojure.
 
 Since I imagine this is most likely to be used directly from other Clojure code
-if used at all, the command line interface only really supports simple testing
-right now.  The Clojure interface is in [core.clj](/zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20).
+by exchanges if used at all, the command line interface only really supports
+simple testing (account list [input][accountlist], complete tree output) right
+now.  The Clojure interface is in [core.clj][api].
 
 I don't do lein/maven/gradle.  The libraries/versions I used were as follows
 (but earlier versions may very well work):
@@ -22,16 +23,17 @@ borrowed snippets.
 To Do
 =====
 
-* generate random/deterministic trees based on flag (currently always
-  deterministic but not in a way that matches the [spec][s11n]).
+* add support for the root and partial tree [serialisation formats][s11n]
 * more validation of parameters
-* more tests (including running on [Olivier Lalonde's test data][oltest])
-* more serialisation (probably to/from [formats proposed by Olivier Lalonde][s11n])
+* more tests (including formally running on [Olivier Lalonde's test
+  data][oltest])
 
  [merkle]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves#merkle_top
  [proving]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves
  [perm]: https://en.wikipedia.org/wiki/Permissive_free_software_licence
  [fsf-bsl]: https://www.gnu.org/licenses/license-list.html#boost
  [bsl1]: http://www.boost.org/LICENSE_1_0.txt
- [oltest]: /olalonde/blind-liability-proof/blob/master/test/accounts.json
- [s11n]: /olalonde/blind-liability-proof#serialized-data-formats-work-in-progress--draft
+ [oltest]: /olalonde/proof-of-liabilities/blob/master/test/accounts.json
+ [s11n]: /olalonde/proof-of-liabilities#serialized-data-formats-work-in-progress--draft
+ [api]: /zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20
+ [accountlist]: /olalonde/proof-of-liabilities#account-lists
