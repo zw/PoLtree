@@ -36,13 +36,13 @@
   [ [ nonce & path ] ]
     (let [user-node { "data" { "nonce" nonce } } ]
         (-> (reduce vpath->json-helper user-node path)
-            (json/write-str ,,,))))
+            json/write-str)))
 
 ; This does NOT complain if you feed it balances with excessive
 ; numbers of decimal places for the currency.
 (defn accounts-json->maps [accounts-json]
     (->> (json/read-str accounts-json :key-fn keyword)
-         (map adapt-json-account-map ,,,)))
+         (map adapt-json-account-map)))
 
 (defn tree->json [tree]
     (json/write-str (walk/postwalk adapt-core-tree-node tree)))
@@ -63,7 +63,7 @@
                 (format "\"balance\" value %s for user %s isn't supported by spec"
                        (:balance account) (:user account)))))
     (-> (update-in account [:balance] bigdec)
-        (set/rename-keys ,,, {:user :uid})))
+        (set/rename-keys {:user :uid})))
 
 (defn- adapt-core-tree-node
   "Given a tree node from core, adapt it to a map conforming to the

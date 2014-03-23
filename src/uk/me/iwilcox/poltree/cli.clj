@@ -32,12 +32,11 @@ Usage:
         (println usage)
         (condp = (first args)
             "completetree" (-> (second args)
-                               (slurp-accounts ,,,)
-                               (s11n/accounts-json->maps ,,,)
-                               ; Future: add :deterministic true
-                               (core/accounts->tree ,,, true)
-                               (s11n/tree->json ,,,)
-                               (println ,,,))
+                               slurp-accounts
+                               s11n/accounts-json->maps
+                               (core/accounts->tree true)
+                               s11n/tree->json
+                               println)
             (println usage))))
 
 (defn- slurp-accounts [& args]

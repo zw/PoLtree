@@ -45,9 +45,9 @@
   ([accounts deterministic]
     ; For each account, adapt keys then nest in a list to make it a tree leaf
     ; node.
-    (-> (map #(list (prep-account %)) accounts)
-        (pp-accounts->tree ,,, deterministic)
-        (first ,,,)))
+    (-> (map (comp list prep-account) accounts)
+        (pp-accounts->tree deterministic)
+        first)))
 ; FIXME: get rid of `first`; maybe you can not call partition-all, but
 ; just partition, in pp-accounts->tree-deterministic?
 
@@ -92,17 +92,18 @@
 ;
 ; TODO: currently fails pretty silently if passed root=nil.
 (defn verification-path
-  ([root root-path] (verification-path root root-path ()))
-  ([n root-path vpath]
-    (if (leaf? n)
-        (cons (:nonce (node-data n)) vpath)
-        (let [goleft (= :left (first root-path))
-              follow-child ((if goleft left-child right-child) n)
+  ([root path-to-leaf] (verification-path root path-to-leaf ()))
+  ([node path-to-leaf vpath]
+    (if (leaf? node)
+        (cons (:nonce (node-data node)) vpath)
+        (let [goleft (= :left (first path-to-leaf))
+              follow-child ((if goleft left-child right-child) node)
               other-child-side (if goleft :right :left)
-              other-child ((if goleft right-child left-child) n)
-              other-child-data (select-keys (node-data other-child) [:sum :hash])]
+              other-child ((if goleft right-child left-child) node)
+              other-child-data (select-keys (node-data other-child)
+                                            [:sum :hash])]
             (->> (cons [other-child-side other-child-data] vpath)
-                 (recur follow-child (rest root-path) ,,,))))))
+                 (recur follow-child (rest path-to-leaf)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; Customer interface.
@@ -115,7 +116,7 @@
     ; Just barely resisting the urge to use keywordize:
     ;   https://github.com/amalloy/amalloy-utils/blob/master/src/amalloy/utils.clj#L30
     (let [account (prep-account {:uid uid :balance balance :nonce nonce})]
-        (and (not-any? #(neg? (:sum (second %))) vpath)
+        (and (not-any? (comp neg? :sum second) vpath)
              (= published-root-hash
                 (:hash (reduce combiner-reducer account vpath))))))
 
@@ -133,16 +134,14 @@
 (defn- right-child [n] (nth n 2 nil)) ; aka third
 (defn- leaf? [n] (and (nil? (left-child n))
                       (nil? (right-child n))))
-; Or:       [n] (every? nil? (rest n))
-; Or:       [n] (:uid n)
 
 (defn as-map [n]
     (if (seq? n)
         ; Stringify :sum and filter out key->nil mappings.
-        (into {} (filter val { :data (update-in (first n) [:sum]
-                                                format-min-dp)
-                               :left (second n)
-                               :right (nth n 2 nil) }))
+        (into {} (filter val {:data (update-in (first n) [:sum]
+                                               format-min-dp)
+                              :left (second n)
+                              :right (nth n 2 nil)}))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
 
 (defn- format-min-dp
@@ -155,22 +154,23 @@
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
         (do
             (.update d (.getBytes s))
-            (str/join (map #(format "%02x" %) (.digest d))))))
+            (str/join (map (partial format "%02x") (.digest d))))))
 
 ; Combining of plain maps.
 (defn- hcombine
   ([n] n)
-  ([l r]
-    (let [sum (+ (:sum l) (:sum r))]
+  ([left right]
+    (let [sum (+ (:sum left) (:sum right))]
         {:sum  sum
-         :hash (->> [ (format-min-dp sum) (l :hash) (r :hash) ]
-                    (str/join "|" ,,,)
-                    (sha256-hex ,,,))})))
+         :hash (->> [(format-min-dp sum) (:hash left) (:hash right)]
+                    (str/join "|")
+                    sha256-hex)})))
 
 ; Combining of tree nodes which have maps as data.
 (defn- ncombine
   ([n] n)
-  ([l r] (list (hcombine (node-data l) (node-data r)) l r)))
+  ([left right]
+    (list (hcombine (node-data left) (node-data right)) left right)))
 
 (defn- add-leaf-hash
   [{uid :uid, nonce :nonce, :as leaf}]
@@ -184,13 +184,13 @@
   [account]
     (validate-account-map account)
     (-> (select-keys account [:uid :balance :nonce])
-        (add-nonce-if-missing ,,,)
-        (add-leaf-hash ,,,)
-        (set/rename-keys ,,, {:balance :sum})))
+        add-nonce-if-missing
+        add-leaf-hash
+        (set/rename-keys {:balance :sum})))
 
 (defn- validate-account-map
   "Ensure account contains the right k/v pairs of the right types."
-  [{ balance :balance, uid :uid, :as account }]
+  [{balance :balance, uid :uid, :as account}]
     (if (or (nil? uid) (not (string? uid))
             (nil? balance) (not (instance? BigDecimal balance)))
         (throw (IllegalArgumentException.
@@ -213,7 +213,7 @@
     (let [sr (java.security.SecureRandom.)
           bytes (byte-array num-bytes)]
         (.nextBytes sr bytes)
-        (str/join (map #(format "%02x" %) bytes))))
+        (str/join (map (partial format "%02x") bytes))))
 
 (defn- add-dummy-accounts
   "For generating deterministic trees for testing.  Given a
@@ -251,7 +251,7 @@
             ; in a "full" binary tree; it's simple and minimal, although after
             ; seeing a few verification paths, a customer could have a
             ; reasonable guess at the total number of customers.
-            (recur (map #(apply ncombine %) (partition-all 2 accounts)))
+            (recur (map (partial apply ncombine) (partition-all 2 accounts)))
             accounts)))
 
 ; Approach taken from:
