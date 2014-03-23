@@ -22,7 +22,7 @@
 (defn noddy-fixture [f]
     (let [accounts (map #(hash-map :uid % :balance (bigdec %) :nonce %)
                         ["0" "1" "2" "3" "4" "5"])
-          tree (core/accounts->tree accounts)
+          tree (core/accounts->tree accounts true)
           index (core/index-leaves tree)
           vpath3 (core/verification-path tree (get index "3"))
 
@@ -32,7 +32,7 @@
                                        :balance (bigdec (if (= "2" %) -2 %))
                                        :nonce %)
                             ["0" "1" "2" "3" "4" "5"])
-          tree-neg (core/accounts->tree accounts-neg)
+          tree-neg (core/accounts->tree accounts-neg true)
           index-neg (core/index-leaves tree-neg)
           vpath1-neg (core/verification-path tree-neg (get index "1"))
           vpath3-neg (core/verification-path tree-neg (get index "3"))]
@@ -44,11 +44,11 @@
             (f))))
  
 (deftest included
-    (is (core/included? "3" 3M *vpath3* "736c5e8bf49375e62cb340810124fe234fde89348928c2a02d3ef1f68cd0b1cf")
+    (is (core/included? "3" 3M *vpath3* "f3de0d8cebdbea80a0fb393f60da20dea382d2567ba40a0574e6f0f1155a94bc")
         "account should verify as included in the root")
-    (is (false? (core/included? "2" 3M *vpath3* "736c5e8bf49375e62cb340810124fe234fde89348928c2a02d3ef1f68cd0b1cf"))
+    (is (false? (core/included? "2" 3M *vpath3* "f3de0d8cebdbea80a0fb393f60da20dea382d2567ba40a0574e6f0f1155a94bc"))
         "inclusion verification should fail on UID mismatch")
-    (is (false? (core/included? "3" 2M *vpath3* "736c5e8bf49375e62cb340810124fe234fde89348928c2a02d3ef1f68cd0b1cf"))
+    (is (false? (core/included? "3" 2M *vpath3* "f3de0d8cebdbea80a0fb393f60da20dea382d2567ba40a0574e6f0f1155a94bc"))
         "inclusion verification should fail on balance mismatch")
     (is (false? (core/included? "3" 3M *vpath3* "63c0e5d695e959c0c79093b54b2ddafe0dd28a20a47eab48d17768f9db966d97"))
         "inclusion verification should fail if published/computed root hashes differ")
@@ -56,12 +56,12 @@
     ; Swap our balance with that of our sibling.
     (let [sibling-bal (get-in (vec *vpath3*) [1 1 :sum])
           vpath3-balswap (assoc-in (vec *vpath3*) [1 1 :sum] 3M)]
-        (is (false? (core/included? "3" sibling-bal vpath3-balswap "736c5e8bf49375e62cb340810124fe234fde89348928c2a02d3ef1f68cd0b1cf"))
+        (is (false? (core/included? "3" sibling-bal vpath3-balswap "f3de0d8cebdbea80a0fb393f60da20dea382d2567ba40a0574e6f0f1155a94bc"))
             "inclusion verification should fail if sibling balances swap places"))
 
-    (is (core/included? "1" 1M *vpath1-neg* "4c21d9ab1c6fbececa54ae797dec700fa1b90c03728d4f7d2f37ce31cada6ed2")
+    (is (core/included? "1" 1M *vpath1-neg* "85bfcc7f40288d5288d7aaa7225dbdd682eed0f67ae48577c0ea8ac520ce6aa2")
         "inclusion verification should pass despite a hidden negative balance")
-    (is (false? (core/included? "3" 3M *vpath3-neg* "4c21d9ab1c6fbececa54ae797dec700fa1b90c03728d4f7d2f37ce31cada6ed2"))
+    (is (false? (core/included? "3" 3M *vpath3-neg* "85bfcc7f40288d5288d7aaa7225dbdd682eed0f67ae48577c0ea8ac520ce6aa2"))
         "inclusion verification should fail if a negative balance is visible"))
 
 ; More stuff to test:

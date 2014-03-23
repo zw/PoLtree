@@ -27,7 +27,8 @@
         (?: \. [0-9]+ )?
     )")
 
-(declare vpath->json-helper adapt-json-account-map)
+(declare vpath->json-helper adapt-json-account-map
+         adapt-core-tree-node)
 
 (defn vpath->json
   "Given a path as returned by core/verification-path, return a JSON
@@ -44,7 +45,7 @@
          (map adapt-json-account-map ,,,)))
 
 (defn tree->json [tree]
-    (json/write-str (walk/postwalk core/as-map tree)))
+    (json/write-str (walk/postwalk adapt-core-tree-node tree)))
 
 ; TO DO: tree->root-json
 
@@ -52,8 +53,8 @@
 ; Helpers
 ;;;;;;;;;;;
 (defn- adapt-json-account-map
-  "Given an account map freshly parsed from JSON, parse the given
-  account's :balance string, returning the updated map."
+  "Given an account map freshly parsed from JSON, validate it then
+  adapt it to what core/* expect and return the updated map."
   ; FIXME: could do more validation but at the moment it's a test
   ; format only and the stricter checks in core will catch it.
   [account]
@@ -63,6 +64,16 @@
                        (:balance account) (:user account)))))
     (-> (update-in account [:balance] bigdec)
         (set/rename-keys ,,, {:user :uid})))
+
+(defn- adapt-core-tree-node
+  "Given a tree node from core, adapt it to a map conforming to the
+  spec for JSON tree objects and return that.  Given anything part of
+  a tree, return it untouched (making this `walk/*`-compatible)."
+  [elem]
+    (if (seq? elem) ; node?
+        (-> (core/as-map elem)
+            (update-in [:data] #(set/rename-keys % {:uid :user})))
+        elem))
 
 (defn- vpath->json-helper [node [side sibling]]
     (let [sibling (set/rename-keys sibling {:sum "value" :hash "hash"})]

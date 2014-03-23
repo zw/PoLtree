@@ -35,7 +35,7 @@ Usage:
                                (slurp-accounts ,,,)
                                (s11n/accounts-json->maps ,,,)
                                ; Future: add :deterministic true
-                               (core/accounts->tree ,,,)
+                               (core/accounts->tree ,,, true)
                                (s11n/tree->json ,,,)
                                (println ,,,))
             (println usage))))

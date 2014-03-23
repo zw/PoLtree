@@ -8,12 +8,16 @@ Since I imagine this is most likely to be used directly from other Clojure code
 if used at all, the command line interface only really supports simple testing
 right now.  The Clojure interface is in [core.clj](/zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20).
 
-I don't do lein/maven/gradle, so libraries used were:
+I don't do lein/maven/gradle.  The libraries/versions I used were as follows
+(but earlier versions may very well work):
+ * Java 1.7 (Oracle's one)
  * Clojure 1.4
  * [data.json](/clojure/data.json) 0.2.4
+ * [math.numeric-tower](/clojure/math.numeric-tower) 0.0.4
 
 Licence: [Boost Software License Version 1.0][bsl1] (a BSD/MIT-like,
-[permissive][perm]-and-[GPL-compatible][fsf-bsl] one).
+[permissive][perm], [GPL-compatible][fsf-bsl] one), except as noted for
+borrowed snippets.
 
 To Do
 =====

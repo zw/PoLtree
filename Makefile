@@ -1,4 +1,5 @@
-CLASSPATH = lib/data.json-0.2.4.jar
+classpathify = $(subst $(eval) ,:,$(wildcard $1))
+CLASSPATH = $(call classpathify,lib/*.jar)
 
 .PHONY: test
 test:

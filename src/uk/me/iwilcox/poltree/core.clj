@@ -10,10 +10,12 @@
 ;
 (ns uk.me.iwilcox.poltree.core
     (:require [clojure.string :as str])
-    (:require [clojure.set :as set]))
+    (:require [clojure.set :as set])
+    (:require [clojure.math.numeric-tower :as math])
+    (:require [uk.me.iwilcox.poltree.util :as util]))
 
 (declare node-data left-child right-child leaf?)
-(declare sha256-hex hcombine ncombine leaf-hash)
+(declare sha256-hex hcombine ncombine add-leaf-hash)
 (declare prep-account pp-accounts->tree)
 (declare combiner-reducer)
 
@@ -30,12 +32,24 @@
 ; uids in the list.
 ; This does NOT complain if you feed it balances with excessive
 ; numbers of decimal places for the currency.
-(defn accounts->tree [accounts]
+
+(defn accounts->tree
+  "Build a binary Merkle tree of liabilities from a `Sequential` of
+  account maps, each with (at least) the keys :uid :nonce :balance.
+  If `deterministic` is false (the default) the resulting tree will
+  have a random shape and leaves will be visited in a random order if
+  the tree is walked.  Otherwise the tree will be a perfect binary
+  tree (padded with dummy accounts as per the spec) and traversal will
+  return the leaves in the order supplied."
+  ([accounts] (accounts->tree accounts false))
+  ([accounts deterministic]
     ; For each account, adapt keys then nest in a list to make it a tree leaf
     ; node.
     (-> (map #(list (prep-account %)) accounts)
-        (pp-accounts->tree ,,,)
+        (pp-accounts->tree ,,, deterministic)
         (first ,,,)))
+; FIXME: get rid of `first`; maybe you can not call partition-all, but
+; just partition, in pp-accounts->tree-deterministic?
 
 ; Given a liability tree root, walk the tree and produce an index from account
 ; UID to directions-to-that-leaf.  The directions consist of a sequential
@@ -108,13 +122,9 @@
 ;;;;;;;;;;;
 ; Helpers
 ;;;;;;;;;;;
-(declare add-nonce-if-missing make-nonce-hexstr validate-account-map)
-
-(defn- format-min-dp
-  "Format `sum` (a bigdec) with the minimum possible number of
-  trailing zeros."
-  [sum]
-    (.toPlainString (.stripTrailingZeros sum)))
+(declare add-nonce-if-missing make-nonce-hexstr validate-account-map
+         pp-accounts->tree-deterministic pp-accounts->tree-random
+         gaussian-split format-min-dp)
 
 ; Convenience bits for manipulating tree nodes of the form:
 ;     ( { <data> }  <left child>  <right child> )
@@ -134,6 +144,12 @@
                                :left (second n)
                                :right (nth n 2 nil) }))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
+
+(defn- format-min-dp
+  "Format `sum` (a bigdec) with the minimum possible number of
+  trailing zeros."
+  [sum]
+    (.toPlainString (.stripTrailingZeros sum)))
 
 (defn- sha256-hex [s]
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
@@ -156,17 +172,20 @@
   ([n] n)
   ([l r] (list (hcombine (node-data l) (node-data r)) l r)))
 
-(defn- leaf-hash [{uid :uid, balance :balance, nonce :nonce}]
-    (sha256-hex (str uid "|" (format-min-dp balance) "|" nonce)))
+(defn- add-leaf-hash
+  [{uid :uid, nonce :nonce, :as leaf}]
+  (let [balance (or (:balance leaf) (:sum leaf))]
+    (->> (sha256-hex (str uid "|" (format-min-dp balance) "|" nonce))
+         (assoc leaf :hash))))
 
 (defn- prep-account
-  "Validate, then remove irrelevant keys, add :nonce, add :hash,
-  rename :balance to :sum."
+  "Validate, remove irrelevant keys, add :nonce, add :hash, rename
+  :balance to :sum."
   [account]
     (validate-account-map account)
     (-> (select-keys account [:uid :balance :nonce])
         (add-nonce-if-missing ,,,)
-        (assoc ,,, :hash (leaf-hash account))
+        (add-leaf-hash ,,,)
         (set/rename-keys ,,, {:balance :sum})))
 
 (defn- validate-account-map
@@ -196,9 +215,34 @@
         (.nextBytes sr bytes)
         (str/join (map #(format "%02x" %) bytes))))
 
-; Build a binary Merkle tree of liabilities from a collection of preprocessed
-; account maps, each with (at least) the keys :hash and :sum.
-(defn- pp-accounts->tree [accounts]
+(defn- add-dummy-accounts
+  "For generating deterministic trees for testing.  Given a
+  `Sequential` of preprocessed accounts, append enough dummy accounts
+  to pad the list to the next highest power of 2.  Return the padded
+  `Sequential`."
+  [accounts]
+    (let [have (count accounts)
+          want (->> (/ (Math/log have) (Math/log 2))
+                    Math/ceil
+                    (.pow 2M)
+                    int)
+          num-dummies (- want have)
+          dummy (add-leaf-hash {:uid "dummy", :sum 0M, :nonce "0"})]
+        (concat accounts (repeat num-dummies (list dummy)))))
+
+(defn- pp-accounts->tree
+  "As for `accounts->tree` but takes *preprocessed* account maps, each
+  with (at least) the keys :hash and :sum."
+  [accounts deterministic]
+    (if deterministic
+        (if (every? #(contains? (node-data %) :nonce) accounts)
+            (pp-accounts->tree-deterministic (add-dummy-accounts accounts))
+            ; FIXME will never trigger because preprocessing added nonces.
+            (throw (IllegalArgumentException.
+                    "In deterministic mode all accounts must already have nonces.")))
+        (list (pp-accounts->tree-random accounts))))
+
+(defn- pp-accounts->tree-deterministic [accounts]
     (if (first accounts)
         (if (second accounts)
             ; Group into pairs; replace pairs with their parents/combinations;
@@ -210,8 +254,40 @@
             (recur (map #(apply ncombine %) (partition-all 2 accounts)))
             accounts)))
 
+; Approach taken from:
+;     https://en.wikipedia.org/wiki/Random_binary_tree#Random_split_trees
+(defn- pp-accounts->tree-random
+  ([accounts]
+    (->> (shuffle accounts)
+         gaussian-split
+         (apply pp-accounts->tree-random)))
+  ([left right]
+    (letfn [(get-child [coll] (if (> (count coll) 1)
+                                  (->> (gaussian-split coll)
+                                       (apply pp-accounts->tree-random))
+                                  (first coll)))]
+      (ncombine (get-child left) (get-child right)))))
+
 ; Helper for verification-path's minimal format.
 (defn- combiner-reducer [ndata [sibling-side sibling-data]]
     (if (= sibling-side :left)
         (hcombine sibling-data ndata)
         (hcombine ndata sibling-data)))
+
+(def z99
+  "The z value for which (an arbitrary) 99% of randomly picked
+  Gaussian-distributed numbers are expected to lie within z standard
+  deviations of the mean, i.e. within interval (-zσ, zσ).  This is
+  used to constrain `rand-gaussian` to 0 < x < 1 (crudely!) without
+  causing >1% of outliers to (be expected to) cluster at the edges."
+  (/ 0.5 2.575829))
+
+(defn- gaussian-split
+  "Generate a Gaussian-distributed random number and use it to split
+  `coll` into two somewhat unequal (but never empty) parts."
+  [coll]
+    (-> (util/rand-gaussian 0.5 z99 0 1)
+        (* (- (count coll) 2))
+        math/round
+        inc
+        (split-at coll)))
