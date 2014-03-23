@@ -7,7 +7,7 @@
 ; file LICENCE.txt or copy at <http://www.boost.org/LICENSE_1_0.txt>.
 ;
 ; Serialisation to/from formats described in section "Serialized data formats"
-; of <https://github.com/olalonde/blind-liability-proof>.
+; of <https://github.com/olalonde/proof-of-liabilities>.
 ;
 (ns uk.me.iwilcox.poltree.s11n
     (:require [clojure.data.json :as json])
