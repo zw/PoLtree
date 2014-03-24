@@ -61,8 +61,8 @@ I don't do lein/maven/gradle.  The libraries/versions I used were as follows
 (but earlier versions may very well work):
  * Java 1.7 (Oracle's one)
  * Clojure 1.4
- * [data.json](https://github.com/clojure/data.json), v[0.2.4](http://search.maven.org/#artifactdetails|org.clojure|data.json|0.2.4|jar)
- * [math.numeric-tower](https://github.com/clojure/math.numeric-tower), v[0.0.4](http://search.maven.org/#artifactdetails|org.clojure|math.numeric-tower|0.0.4|jar)
+ * data.json ([project](https://github.com/clojure/data.json); `.jar` direct from Maven: v[0.2.4](http://search.maven.org/#artifactdetails|org.clojure|data.json|0.2.4|jar))
+ * math.numeric-tower ([project](https://github.com/clojure/math.numeric-tower); `.jar` direct from Maven: v[0.0.4](http://search.maven.org/#artifactdetails|org.clojure|math.numeric-tower|0.0.4|jar))
 
 Licence: except where noted otherwise, the
 [Mozilla Public License v2.0] [MPL2] (GPL-compatible).
