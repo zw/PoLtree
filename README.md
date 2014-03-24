@@ -4,7 +4,8 @@ PoLtree
 An implementation of [Greg Maxwell's Merkle approach][merkle] to [proving
 Bitcoin liabilities][proving], in Clojure.
 
-An example partial graph from the full accounts list, for `satoshi`:
+An example partial graph from the [full example accounts list]
+[accounts-json], for `satoshi`:
 
 <img src="https://iwilcox.me.uk/2014/proving/satoshi-partial" />
 
