@@ -12,8 +12,8 @@ An example complete graph from a [simpler accounts list] [trivial]:
 
 <img src="https://iwilcox.me.uk/2014/proving/trivial-complete" />
 
-Here's how to reproduce the above graphs using the CLI example.
-You'll need [`accounts-deterministic.json`] [accounts-json] and
+Here's how to reproduce the above graphs using the CLI.  You'll need
+[`accounts-deterministic.json`] [accounts-json] and
 [`trivial-deterministic.json`] [trivial] to follow along.  The output
 is minimal (whitespace-light) so I'd recommend piping it through
 [`jq .`] [jq] if you want to read it, but the prettier way to view
@@ -36,7 +36,7 @@ cat trivial-deterministic.json | ./poltree.sh completetree >trivial-complete.jso
 
 cat trivial-deterministic.json | ./poltree.sh completetree | jq .
 
-# Or if you've installed GraphViz (Debian etc: graphviz, libgraphviz-perl)...
+# Or if you've installed extra bits (Debian etc: graphviz, libjson-perl)...
 
 cat trivial-deterministic.json | ./poltree.sh completetree \
     | perl tools/s11n-to-dot.pl | dot -Tpng >trivial-complete.png
