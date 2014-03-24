@@ -78,7 +78,7 @@ To Do
  [merkle]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves#merkle_top
  [proving]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves
  [MPL2]: http://www.mozilla.org/MPL/2.0/
- [oltest]: /olalonde/proof-of-liabilities/blob/master/test/accounts.json
- [s11n]: /olalonde/proof-of-liabilities#serialized-data-formats-work-in-progress--draft
- [api]: /zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20
+ [oltest]: https://github.com/olalonde/proof-of-liabilities/blob/master/test/accounts.json
+ [s11n]: http://github.com/olalonde/proof-of-liabilities#serialized-data-formats-work-in-progress--draft
+ [api]: https://github.com/zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20
  [accountlist]: /olalonde/proof-of-liabilities#account-lists
