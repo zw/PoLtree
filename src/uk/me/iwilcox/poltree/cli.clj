@@ -25,7 +25,7 @@ Usage:
 ; This does NOT complain if you feed it balances with excessive
 ; numbers of decimal places for the currency.
 
-(declare slurp-file-or-stdin!)
+(declare slurp-file-or-stdin! partial-tree)
 
 (defn -main [& args]
     (if-not args
@@ -37,6 +37,7 @@ Usage:
                                (core/accounts->tree true)
                                s11n/tree->json
                                println)
+            "partialtree" (apply partial-tree (rest args))
             (println usage))))
 
 (defn- slurp-file-or-stdin! [& args]
@@ -45,3 +46,14 @@ Usage:
             (slurp filename :encoding "UTF-8")
             (println usage))
         (slurp *in* :encoding "UTF-8")))
+
+(defn- partial-tree
+  [uid & wholetree-filename]
+    (if (nil? uid)
+        (println usage)
+        (-> (slurp-file-or-stdin! wholetree-filename)
+            s11n/tree-json->nodes
+            ; FIXME: no protection against non-existent uid yet.
+            (core/verification-path uid)
+            s11n/vpath->json
+            println)))

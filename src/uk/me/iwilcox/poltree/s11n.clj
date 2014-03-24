@@ -28,7 +28,7 @@
     )")
 
 (declare vpath->json-helper adapt-json-account-map
-         adapt-core-tree-node)
+         adapt-core-tree-node adapt-json-tree-node)
 
 (defn vpath->json
   "Given a path as returned by core/verification-path, return a JSON
@@ -46,6 +46,26 @@
 
 (defn tree->json [tree]
     (json/write-str (walk/postwalk adapt-core-tree-node tree)))
+
+(defn tree-json->nodes
+  "Given a JSON fragment representing a tree from core/accounts->tree,
+  reproduce the tree."
+  [tree-json]
+    (->> (json/read-str tree-json :key-fn keyword)
+         (walk/postwalk adapt-json-tree-node)))
+
+(defn- adapt-json-tree-node
+  "Given a map element in a freshly JSON-parsed tree, return the
+  corresponding internal representation.  `walk/postwalk`-compatible."
+  [elem]
+    (if (map? elem)
+        (if (contains? elem :data)
+            (->> (-> (update-in elem [:data :sum] bigdec)
+                     (update-in [:data] #(set/rename-keys % {:user :uid})))
+                 ((juxt :data :left :right))
+                 (take-while identity))
+            elem)
+        elem))
 
 ; TO DO: tree->root-json
 
