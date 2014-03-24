@@ -76,7 +76,8 @@
         elem))
 
 (defn- vpath->json-helper [node [side sibling]]
-    (let [sibling (set/rename-keys sibling {:sum "value" :hash "hash"})]
+    (let [sibling (-> (set/rename-keys sibling {:sum "sum" :hash "hash"})
+                      (update-in ["sum"] core/format-min-dp))]
         (if (= :left side)
             {
                 "left" {

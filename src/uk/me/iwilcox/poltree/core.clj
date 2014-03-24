@@ -144,7 +144,7 @@
                               :right (nth n 2 nil)}))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
 
-(defn- format-min-dp
+(defn format-min-dp
   "Format `sum` (a bigdec) with the minimum possible number of
   trailing zeros."
   [sum]
