@@ -25,21 +25,21 @@ Usage:
 ; This does NOT complain if you feed it balances with excessive
 ; numbers of decimal places for the currency.
 
-(declare slurp-accounts)
+(declare slurp-file-or-stdin!)
 
 (defn -main [& args]
     (if-not args
         (println usage)
         (condp = (first args)
             "completetree" (-> (second args)
-                               slurp-accounts
+                               slurp-file-or-stdin!
                                s11n/accounts-json->maps
                                (core/accounts->tree true)
                                s11n/tree->json
                                println)
             (println usage))))
 
-(defn- slurp-accounts [& args]
+(defn- slurp-file-or-stdin! [& args]
     (if-let [filename (first args)]
         (if (.exists (clojure.java.io/as-file filename))
             (slurp filename :encoding "UTF-8")
