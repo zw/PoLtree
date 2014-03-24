@@ -30,7 +30,7 @@ sub walk {
 
     my $short_hash = "";
     if (exists($data->{hash})) {
-        ($short_hash = $data->{hash}) =~ s/^(...).*(...)$/h: $1...$2/;
+        ($short_hash = $data->{hash}) =~ s/^(....).*(....)$/h: $1...$2/;
     }
 
     my $sum = "";
@@ -48,7 +48,7 @@ sub walk {
             $user = "u: $data->{user}";
         }
         if (exists($data->{nonce})) {
-            $nonce .= "n: $data->{nonce}";
+            ($nonce = $data->{nonce}) =~ s/^(....).*(....)$/n: $1...$2/;
         }
     }
 
