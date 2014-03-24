@@ -25,13 +25,18 @@ print "}\n";
 sub walk {
     my ($parent, $data, $left, $right) = @_;
 
-    if (!defined($data->{hash})) {
-        print Dumper(\$data);
-        die "^^^ node with no hash?";
+    my $name = $uid;
+    $uid++;
+
+    my $short_hash = "";
+    if (exists($data->{hash})) {
+        ($short_hash = $data->{hash}) =~ s/^(...).*(...)$/h: $1...$2/;
     }
 
-    (my $short_hash = $data->{hash}) =~ s/^(...).*(...)$/h: $1...$2/;
-    my $sum = "Σ: $data->{sum}";
+    my $sum = "";
+    if (exists($data->{sum})) {
+        $sum = "Σ: $data->{sum}";
+    }
 
     # Give leaves a different shape and extra info.
     my $shape = "";
@@ -39,11 +44,14 @@ sub walk {
     my $nonce = "";
     if (!($left || $right)) {
         $shape = ",shape=box";
-        $user = "u: $data->{user}";
-        $nonce .= "n: $data->{nonce}";
+        if (exists($data->{user})) {
+            $user = "u: $data->{user}";
+        }
+        if (exists($data->{nonce})) {
+            $nonce .= "n: $data->{nonce}";
+        }
     }
 
-    my $name = "\"$short_hash #$uid\"";
     my $label = join("\\n", grep { length($_) } ($user, $nonce, $sum, $short_hash));
     print "    $name [label=\"$label\"$shape]\n";
 
@@ -51,8 +59,6 @@ sub walk {
     if (defined($parent)) {
         print "    $name -> $parent\n";
     }
-
-    $uid++;
 
     if ($left) {
         walk($name, $left->{data}, $left->{left}, $left->{right});
