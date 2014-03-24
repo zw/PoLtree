@@ -120,9 +120,23 @@
              (= published-root-hash
                 (:hash (reduce combiner-reducer account vpath))))))
 
-;;;;;;;;;;;
-; Helpers
-;;;;;;;;;;;
+;;;;;;;;;;;;
+; Utilities
+;;;;;;;;;;;;
+(defn format-min-dp
+  "Format `sum` (a bigdec) with the minimum possible number of
+  trailing zeros."
+  [sum]
+    ; Being careful to work around JDK bug 6480539 (fixed in JDK 8):
+    ;   "BigDecimal.stripTrailingZeros() has no effect on zero itself ("0.0")"
+    ;   http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6480539
+    (if (zero? (compare BigDecimal/ZERO sum))
+        "0"
+        (.toPlainString (.stripTrailingZeros sum))))
+
+;;;;;;;;;;;;;;;;;;;
+; Internal Helpers
+;;;;;;;;;;;;;;;;;;;
 (declare add-nonce-if-missing make-nonce-hexstr validate-account-map
          pp-accounts->tree-deterministic pp-accounts->tree-random
          gaussian-split format-min-dp)
@@ -144,11 +158,6 @@
                               :right (nth n 2 nil)}))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
 
-(defn format-min-dp
-  "Format `sum` (a bigdec) with the minimum possible number of
-  trailing zeros."
-  [sum]
-    (.toPlainString (.stripTrailingZeros sum)))
 
 (defn- sha256-hex [s]
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
