@@ -14,10 +14,10 @@
     (:require [clojure.math.numeric-tower :as math])
     (:require [uk.me.iwilcox.poltree.util :as util]))
 
-(declare node-data left-child right-child leaf?)
-(declare sha256-hex hcombine ncombine add-leaf-hash)
-(declare prep-account pp-accounts->tree)
-(declare combiner-reducer)
+(declare node-data left-child right-child leaf?
+         sha256-hex hcombine ncombine add-leaf-hash
+         prep-account pp-accounts->tree
+         combiner-reducer path-to-uid)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ; Coinholder interface
@@ -92,7 +92,10 @@
 ;
 ; TODO: currently fails pretty silently if passed root=nil.
 (defn verification-path
-  ([root path-to-leaf] (verification-path root path-to-leaf ()))
+  ([root path-or-uid]
+    (if (string? path-or-uid)
+        (verification-path root (path-to-uid path-or-uid root) ())
+        (verification-path root path-or-uid ())))
   ([node path-to-leaf vpath]
     (if (leaf? node)
         (cons (:nonce (node-data node)) vpath)
@@ -158,6 +161,18 @@
                               :right (nth n 2 nil)}))
         n)) ; Acting like 'identity' on non-maps allows use with postwalk.
 
+(defn- path-to-uid
+  "Given a unique user ID to find and a (sub)tree to find it in,
+  return a Sequential of :left/:rights giving directions to it, or nil
+  if the uid isn't present."
+  [uid node]
+    (if (leaf? node)
+        (if (= uid (:uid (node-data node)))
+            '()) ; Empty path is truthy and ready to be prepended to.
+        (let [found (lazy-cat [[:left (path-to-uid uid (left-child node))]]
+                              [[:right (path-to-uid uid (right-child node))]])]
+            (if-let [pair (some #(if (second %) %) found)]
+                (apply cons pair)))))
 
 (defn- sha256-hex [s]
     (let [d (java.security.MessageDigest/getInstance "SHA-256")]
