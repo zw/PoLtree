@@ -49,26 +49,17 @@
     (json/write-str (walk/postwalk adapt-core-tree-node tree)))
 
 (defn tree-json->nodes
-  "Given a JSON fragment representing a tree from core/accounts->tree,
-  reproduce the tree."
+  "Given a JSON fragment representing a tree, reproduce the tree."
   [tree-json]
     (->> (json/read-str tree-json :key-fn keyword)
          (walk/postwalk adapt-json-tree-node)))
 
-(defn- adapt-json-tree-node
-  "Given a map element in a freshly JSON-parsed tree, return the
-  corresponding internal representation.  `walk/postwalk`-compatible."
-  [elem]
-    (if (map? elem)
-        (if (contains? elem :data)
-            (->> (-> (update-in elem [:data :sum] bigdec)
-                     (update-in [:data] #(set/rename-keys % {:user :uid})))
-                 ((juxt :data :left :right))
-                 (take-while identity))
-            elem)
-        elem))
-
-; TO DO: tree->root-json
+(defn tree-json->root
+  "Given a JSON fragment representing a tree, extract the root."
+  [tree-json]
+    (-> (json/read-str tree-json :key-fn keyword)
+        :data
+        json/write-str))
 
 ;;;;;;;;;;;
 ; Helpers
@@ -94,6 +85,19 @@
     (if (seq? elem) ; node?
         (-> (core/as-map elem)
             (update-in [:data] #(set/rename-keys % {:uid :user})))
+        elem))
+
+(defn- adapt-json-tree-node
+  "Given a map element in a freshly JSON-parsed tree, return the
+  corresponding internal representation.  `walk/postwalk`-compatible."
+  [elem]
+    (if (map? elem)
+        (if (contains? elem :data)
+            (->> (-> (update-in elem [:data :sum] bigdec)
+                     (update-in [:data] #(set/rename-keys % {:user :uid})))
+                 ((juxt :data :left :right))
+                 (take-while identity))
+            elem)
         elem))
 
 (defn- vpath->json-helper [node [side sibling]]

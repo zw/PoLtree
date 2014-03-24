@@ -26,27 +26,24 @@ Usage:
 ; This does NOT complain if you feed it balances with excessive
 ; numbers of decimal places for the currency.
 
-(declare slurp-file-or-stdin! partial-tree)
+(declare slurp-file-or-stdin! complete-tree partial-tree root)
 
 (defn -main [& args]
     (if-not args
         (println usage)
         (condp = (first args)
-            "completetree" (-> (second args)
-                               slurp-file-or-stdin!
-                               s11n/accounts-json->maps
-                               (core/accounts->tree true)
-                               s11n/tree->json
-                               println)
-            "partialtree" (apply partial-tree (rest args))
+            "completetree" (apply complete-tree (rest args))
+            "partialtree"  (apply partial-tree (rest args))
+            "root"         (apply root (rest args))
             (println usage))))
 
-(defn- slurp-file-or-stdin! [& args]
-    (if-let [filename (first args)]
-        (if (.exists (clojure.java.io/as-file filename))
-            (slurp filename :encoding "UTF-8")
-            (println usage))
-        (slurp *in* :encoding "UTF-8")))
+(defn- complete-tree
+  [& accounts-filename]
+    (-> (slurp-file-or-stdin! accounts-filename)
+        s11n/accounts-json->maps
+        (core/accounts->tree true)
+        s11n/tree->json
+        println))
 
 (defn- partial-tree
   [uid & wholetree-filename]
@@ -58,3 +55,16 @@ Usage:
             (core/verification-path uid)
             s11n/vpath->json
             println)))
+
+(defn- root
+  [& wholetree-filename]
+    (-> (slurp-file-or-stdin! wholetree-filename)
+        s11n/tree-json->root
+        println))
+
+(defn- slurp-file-or-stdin! [& args]
+    (if-let [filename (first args)]
+        (if (.exists (clojure.java.io/as-file filename))
+            (slurp filename :encoding "UTF-8")
+            (println usage))
+        (slurp *in* :encoding "UTF-8")))
