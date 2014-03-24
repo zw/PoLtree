@@ -1,9 +1,14 @@
-; Tests for uk.me.iwilcox.poltree/*.
+; An implementation of (the proof-of-inclusion-in-liabilities part of)
+; gmaxwell's proof-of-reserves-(non)fractionality system, as described at
+; <https://iwilcox.me.uk/2014/proving-bitcoin-reserves>.
 ;
 ; Copyright 2014 Isaac Wilcox.
-; Distributed under the Boost Software License, Version 1.0.  See accompanying
-; file LICENCE.txt or copy at <http://www.boost.org/LICENSE_1_0.txt>.
-
+; This Source Code Form is subject to the terms of the Mozilla Public
+; License, v. 2.0. If a copy of the MPL was not distributed with this
+; file, You can obtain one at http://mozilla.org/MPL/2.0/.
+;
+; Tests for uk.me.iwilcox.poltree.*
+;
 (ns uk.me.iwilcox.poltree_test
     (:require [clojure.test :refer [deftest is use-fixtures run-tests]])
     (:require [uk.me.iwilcox.poltree.core :as core])

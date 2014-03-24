@@ -64,9 +64,8 @@ I don't do lein/maven/gradle.  The libraries/versions I used were as follows
  * [data.json](/clojure/data.json), v[0.2.4](http://search.maven.org/#artifactdetails|org.clojure|data.json|0.2.4|jar)
  * [math.numeric-tower](/clojure/math.numeric-tower), v[0.0.4](http://search.maven.org/#artifactdetails|org.clojure|math.numeric-tower|0.0.4|jar)
 
-Licence: [Boost Software License Version 1.0][bsl1] (a BSD/MIT-like,
-[permissive][perm], [GPL-compatible][fsf-bsl] one), except as noted for
-borrowed snippets.
+Licence: except where noted otherwise, the
+[Mozilla Public License v2.0] [MPL2] (GPL-compatible).
 
 To Do
 =====
@@ -78,9 +77,7 @@ To Do
 
  [merkle]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves#merkle_top
  [proving]: https://iwilcox.me.uk/2014/proving-bitcoin-reserves
- [perm]: https://en.wikipedia.org/wiki/Permissive_free_software_licence
- [fsf-bsl]: https://www.gnu.org/licenses/license-list.html#boost
- [bsl1]: http://www.boost.org/LICENSE_1_0.txt
+ [MPL2]: http://www.mozilla.org/MPL/2.0/
  [oltest]: /olalonde/proof-of-liabilities/blob/master/test/accounts.json
  [s11n]: /olalonde/proof-of-liabilities#serialized-data-formats-work-in-progress--draft
  [api]: /zw/PoLtree/blob/master/src/uk/me/iwilcox/poltree/core.clj#L20
