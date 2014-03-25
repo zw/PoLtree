@@ -64,13 +64,13 @@ I don't do lein/maven/gradle.  The libraries/versions I used were as follows
  * data.json ([project](https://github.com/clojure/data.json); `.jar` direct from Maven: v[0.2.4](http://search.maven.org/#artifactdetails|org.clojure|data.json|0.2.4|jar))
  * math.numeric-tower ([project](https://github.com/clojure/math.numeric-tower); `.jar` direct from Maven: v[0.0.4](http://search.maven.org/#artifactdetails|org.clojure|math.numeric-tower|0.0.4|jar))
 
-Licence: except where noted otherwise, the
-[Mozilla Public License v2.0] [MPL2] (GPL-compatible).
+Licence: the GPL-compatible (but less viral)
+[Mozilla Public License v2.0] [MPL2], any exceptions being noted in
+the affected file(s).
 
 To Do
 =====
 
-* add support for the root [serialisation format][s11n]
 * more validation of parameters
 * more tests (including formally running on [Olivier Lalonde's test
   data][oltest])
